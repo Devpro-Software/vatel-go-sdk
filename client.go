@@ -11,7 +11,7 @@ import (
 const defaultRESTPath = "/v1"
 const defaultWSPath = "/v1/connection"
 
-// Client is the REST API client. Use New to construct it; call REST methods (e.g. ListAgents, SessionToken) for API access.
+// Client is the REST API client. Use New to construct it; call REST methods (e.g. ListAgents, GenerateSessionToken) for API access.
 type Client struct {
 	baseURL    string
 	apiKey     string
@@ -45,15 +45,18 @@ func New(baseURL, apiKey string, opts ...ClientOption) *Client {
 	return c
 }
 
-// SessionToken returns a short-lived JWT for the given agent. Use the token with ConnectionURL or DialConnection.
-func (c *Client) SessionToken(ctx context.Context, agentID string) (*SessionTokenResponse, error) {
-	q := url.Values{}
-	q.Set("agentId", agentID)
+// GenerateSessionToken issues a short-lived credential for a voice session. Default transport is websocket when Transport is nil.
+func (c *Client) GenerateSessionToken(ctx context.Context, in GenerateSessionTokenRequest) (*SessionTokenResponse, error) {
 	var out SessionTokenResponse
-	if err := c.doJSON(ctx, http.MethodPost, "/session-token", q, nil, []int{http.StatusOK}, &out); err != nil {
+	if err := c.doJSON(ctx, http.MethodPost, "/session-token", nil, in, []int{http.StatusOK}, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
+}
+
+// SessionToken returns a short-lived JWT for the given agent (websocket transport). Use the token with ConnectionURL or DialConnection.
+func (c *Client) SessionToken(ctx context.Context, agentID string) (*SessionTokenResponse, error) {
+	return c.GenerateSessionToken(ctx, GenerateSessionTokenRequest{AgentID: agentID})
 }
 
 // ListAgents returns all agents for the organization identified by the client's API key.

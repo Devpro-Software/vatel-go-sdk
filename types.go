@@ -282,8 +282,28 @@ type SipTrunkAgentAssignmentCreateInput struct {
 	AlternateNumber string `json:"alternate_number,omitempty"`
 }
 
+type SipTrunkAgentAssignmentPatchInput struct {
+	Number          *string `json:"number,omitempty"`
+	AlternateNumber *string `json:"alternate_number,omitempty"`
+}
+
+type SessionTransport string
+
+const (
+	SessionTransportWebSocket SessionTransport = "websocket"
+	SessionTransportWebRTC    SessionTransport = "webrtc"
+)
+
+type GenerateSessionTokenRequest struct {
+	AgentID   string            `json:"agent_id"`
+	Transport *SessionTransport `json:"transport,omitempty"`
+}
+
 type SessionTokenResponse struct {
-	Token string `json:"token"`
+	Token    string  `json:"token"`
+	Room     *string `json:"room,omitempty"`
+	Identity *string `json:"identity,omitempty"`
+	URL      *string `json:"url,omitempty"`
 }
 
 type ErrorResponse struct {

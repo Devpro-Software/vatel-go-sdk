@@ -191,10 +191,10 @@ func (c *Client) GetSipTrunkAssignment(ctx context.Context, assignmentID string)
 	return &out, nil
 }
 
-func (c *Client) PatchSipTrunkAssignment(ctx context.Context, assignmentID string, patch map[string]interface{}) (*SipTrunkAgentAssignment, error) {
+func (c *Client) PatchSipTrunkAssignment(ctx context.Context, assignmentID string, in SipTrunkAgentAssignmentPatchInput) (*SipTrunkAgentAssignment, error) {
 	var out SipTrunkAgentAssignment
 	path := fmt.Sprintf("/sip-trunks/assignments/%s", url.PathEscape(assignmentID))
-	if err := c.doJSON(ctx, http.MethodPatch, path, nil, patch, []int{http.StatusOK}, &out); err != nil {
+	if err := c.doJSON(ctx, http.MethodPatch, path, nil, in, []int{http.StatusOK}, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil

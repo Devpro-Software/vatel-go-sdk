@@ -3,9 +3,6 @@ package vatel
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -14,7 +11,7 @@ import (
 const defaultRESTPath = "/v1"
 const defaultWSPath = "/v1/connection"
 
-// Client is the REST API client. Use New to construct it; use SessionToken and ListAgents for API calls.
+// Client is the REST API client. Use New to construct it; call REST methods (e.g. ListAgents, GenerateSessionToken) for API access.
 type Client struct {
 	baseURL    string
 	apiKey     string
@@ -48,71 +45,25 @@ func New(baseURL, apiKey string, opts ...ClientOption) *Client {
 	return c
 }
 
-// SessionToken returns a short-lived JWT for the given agent. Use the token with ConnectionURL or DialConnection.
-func (c *Client) SessionToken(ctx context.Context, agentID string) (*SessionTokenResponse, error) {
-	u, err := url.Parse(c.baseURL + defaultRESTPath + "/session-token")
-	if err != nil {
-		return nil, err
-	}
-	q := u.Query()
-	q.Set("agentId", agentID)
-	u.RawQuery = q.Encode()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", "Bearer "+c.apiKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, &APIError{StatusCode: resp.StatusCode, Body: body}
-	}
-
+// GenerateSessionToken issues a short-lived credential for a voice session. Default transport is websocket when Transport is nil.
+func (c *Client) GenerateSessionToken(ctx context.Context, in GenerateSessionTokenRequest) (*SessionTokenResponse, error) {
 	var out SessionTokenResponse
-	if err := json.Unmarshal(body, &out); err != nil {
-		return nil, fmt.Errorf("decode session token: %w", err)
+	if err := c.doJSON(ctx, http.MethodPost, "/session-token", nil, in, []int{http.StatusOK}, &out); err != nil {
+		return nil, err
 	}
 	return &out, nil
 }
 
+// SessionToken returns a short-lived JWT for the given agent (websocket transport). Use the token with ConnectionURL or DialConnection.
+func (c *Client) SessionToken(ctx context.Context, agentID string) (*SessionTokenResponse, error) {
+	return c.GenerateSessionToken(ctx, GenerateSessionTokenRequest{AgentID: agentID})
+}
+
 // ListAgents returns all agents for the organization identified by the client's API key.
 func (c *Client) ListAgents(ctx context.Context) ([]Agent, error) {
-	u := c.baseURL + defaultRESTPath + "/agents"
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", "Bearer "+c.apiKey)
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, &APIError{StatusCode: resp.StatusCode, Body: body}
-	}
-
 	var out []Agent
-	if err := json.Unmarshal(body, &out); err != nil {
-		return nil, fmt.Errorf("decode agents: %w", err)
+	if err := c.doJSON(ctx, http.MethodGet, "/agents", nil, nil, []int{http.StatusOK}, &out); err != nil {
+		return nil, err
 	}
 	return out, nil
 }

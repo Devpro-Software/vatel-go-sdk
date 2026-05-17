@@ -68,15 +68,21 @@ func (c *Client) ListAgents(ctx context.Context) ([]Agent, error) {
 	return out, nil
 }
 
-// ConnectionURL returns the WebSocket URL for the connection channel with the given JWT (e.g. from SessionToken).
-func (c *Client) ConnectionURL(token string) string {
+// ConnectionURL returns the WebSocket URL for GET /v1/connection with the session token and agent id.
+func (c *Client) ConnectionURL(token, agentID, versionID string) string {
 	u := c.baseURL
 	u = strings.Replace(u, "https://", "wss://", 1)
 	u = strings.Replace(u, "http://", "ws://", 1)
-	return u + defaultWSPath + "?token=" + url.QueryEscape(token)
+	q := url.Values{}
+	q.Set("token", token)
+	q.Set("agentId", agentID)
+	if versionID != "" {
+		q.Set("versionId", versionID)
+	}
+	return u + defaultWSPath + "?" + q.Encode()
 }
 
-// DialConnection opens a WebSocket connection using a session token obtained from SessionToken.
-func (c *Client) DialConnection(ctx context.Context, token string) (*Connection, error) {
-	return DialConnection(ctx, c.ConnectionURL(token), nil)
+// DialConnection opens a WebSocket using a session token from GenerateSessionToken or SessionToken.
+func (c *Client) DialConnection(ctx context.Context, token, agentID, versionID string) (*Connection, error) {
+	return DialConnection(ctx, c.ConnectionURL(token, agentID, versionID), nil)
 }

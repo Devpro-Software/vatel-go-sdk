@@ -64,3 +64,39 @@ func (c *Client) doJSON(ctx context.Context, method, relPath string, query url.V
 	}
 	return &APIError{StatusCode: resp.StatusCode, Body: respBody}
 }
+
+func (c *Client) doBytes(ctx context.Context, method, relPath string, query url.Values, accept string, ok []int) ([]byte, error) {
+	base := strings.TrimSuffix(c.baseURL, "/")
+	u, err := url.Parse(base + defaultRESTPath + relPath)
+	if err != nil {
+		return nil, err
+	}
+	if query != nil {
+		u.RawQuery = query.Encode()
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	if accept != "" {
+		req.Header.Set("Accept", accept)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if slices.Contains(ok, resp.StatusCode) {
+		return respBody, nil
+	}
+	return nil, &APIError{StatusCode: resp.StatusCode, Body: respBody}
+}

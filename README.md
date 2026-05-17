@@ -5,7 +5,7 @@ Use the Vatel Call Agent Builder from Go: manage agents over the REST API and ru
 ## Installation
 
 ```bash
-go get github.com/Devpro-Software/vatel-go-sdk
+go get github.com/Devpro-Software/vatel-go-sdk@v0.4.0
 ```
 
 ## Quick start

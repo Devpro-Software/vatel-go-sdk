@@ -68,7 +68,7 @@ func (c *Client) ListAgents(ctx context.Context) ([]Agent, error) {
 	return out, nil
 }
 
-// ConnectionURL returns the WebSocket URL for the connection channel with the given JWT (e.g. from SessionToken).
+// ConnectionURL returns the WebSocket URL for GET /v1/connection. Agent and version are encoded in the JWT from GenerateSessionToken.
 func (c *Client) ConnectionURL(token string) string {
 	u := c.baseURL
 	u = strings.Replace(u, "https://", "wss://", 1)
@@ -76,7 +76,7 @@ func (c *Client) ConnectionURL(token string) string {
 	return u + defaultWSPath + "?token=" + url.QueryEscape(token)
 }
 
-// DialConnection opens a WebSocket connection using a session token obtained from SessionToken.
+// DialConnection opens a WebSocket using a session token from GenerateSessionToken or SessionToken.
 func (c *Client) DialConnection(ctx context.Context, token string) (*Connection, error) {
 	return DialConnection(ctx, c.ConnectionURL(token), nil)
 }

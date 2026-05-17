@@ -27,17 +27,21 @@ type SessionStartedData struct {
 }
 
 type ResponseAudioData struct {
-	TurnID string `json:"turn_id"`
-	Audio  string `json:"audio"`
+	TurnID  string `json:"turn_id"`
+	Audio   string `json:"audio"`
+	IsFinal bool   `json:"is_final"`
 }
 
 type ResponseTextData struct {
-	TurnID string `json:"turn_id"`
-	Text   string `json:"text"`
+	TurnID  string `json:"turn_id"`
+	Text    string `json:"text"`
+	IsFinal bool   `json:"is_final"`
 }
 
 type InputAudioTranscriptData struct {
 	Transcript string `json:"transcript"`
+	TurnID     string `json:"turn_id,omitempty"`
+	IsFinal    bool   `json:"is_final"`
 }
 
 type SpeechStartedData struct {

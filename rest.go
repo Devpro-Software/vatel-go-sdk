@@ -89,15 +89,95 @@ func (c *Client) PublishAgentVersion(ctx context.Context, agentID, versionID str
 	return &out, nil
 }
 
-func (c *Client) DialAgent(ctx context.Context, agentID, destinationNumber string) (*DialAgentResponse, error) {
+func (c *Client) DialAgent(ctx context.Context, agentID string, opts DialAgentOptions) (*DialAgentResponse, error) {
 	q := url.Values{}
-	q.Set("number", destinationNumber)
+	if opts.Number != "" {
+		q.Set("number", opts.Number)
+	}
+	if opts.Destination != "" {
+		q.Set("destination", opts.Destination)
+	}
+	if opts.SipTrunkID != "" {
+		q.Set("sipTrunkId", opts.SipTrunkID)
+	}
+	if opts.CallerID != "" {
+		q.Set("callerId", opts.CallerID)
+	}
+	if opts.FirstMessage != "" {
+		q.Set("firstMessage", opts.FirstMessage)
+	}
+	if opts.Prompt != "" {
+		q.Set("prompt", opts.Prompt)
+	}
 	path := fmt.Sprintf("/agents/%s/dial", url.PathEscape(agentID))
 	var out DialAgentResponse
 	if err := c.doJSON(ctx, http.MethodPost, path, q, nil, []int{http.StatusOK}, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
+}
+
+func (c *Client) ListCalls(ctx context.Context, params ListCallsParams) (*PaginatedCallsResponse, error) {
+	q := url.Values{}
+	if params.OrganizationID != "" {
+		q.Set("organization_id", params.OrganizationID)
+	}
+	if params.Page > 0 {
+		q.Set("page", fmt.Sprintf("%d", params.Page))
+	}
+	if params.PageSize > 0 {
+		q.Set("page_size", fmt.Sprintf("%d", params.PageSize))
+	}
+	if params.AgentIDs != "" {
+		q.Set("agent_ids", params.AgentIDs)
+	}
+	if params.Status != "" {
+		q.Set("status", string(params.Status))
+	}
+	if params.Source != "" {
+		q.Set("source", string(params.Source))
+	}
+	if params.DateFrom != "" {
+		q.Set("date_from", params.DateFrom)
+	}
+	if params.DateTo != "" {
+		q.Set("date_to", params.DateTo)
+	}
+	if params.Outbound != nil {
+		if *params.Outbound {
+			q.Set("outbound", "true")
+		} else {
+			q.Set("outbound", "false")
+		}
+	}
+	if params.Search != "" {
+		q.Set("search", params.Search)
+	}
+	if params.Tag != "" {
+		q.Set("tag", params.Tag)
+	}
+	if params.Outcome != "" {
+		q.Set("outcome", string(params.Outcome))
+	}
+	var out PaginatedCallsResponse
+	if err := c.doJSON(ctx, http.MethodGet, "/calls", q, nil, []int{http.StatusOK}, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *Client) GetCall(ctx context.Context, callID string) (*Call, error) {
+	var out Call
+	path := fmt.Sprintf("/calls/%s", url.PathEscape(callID))
+	if err := c.doJSON(ctx, http.MethodGet, path, nil, nil, []int{http.StatusOK}, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *Client) DownloadCallRecording(ctx context.Context, callID string) ([]byte, error) {
+	path := fmt.Sprintf("/calls/%s/recording", url.PathEscape(callID))
+	return c.doBytes(ctx, http.MethodGet, path, nil, "audio/wav", []int{http.StatusOK})
 }
 
 func (c *Client) ListTwilioNumbers(ctx context.Context) ([]TwilioPhoneNumber, error) {
